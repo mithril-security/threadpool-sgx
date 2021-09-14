@@ -83,6 +83,9 @@ extern crate num_cpus;
 use std::fmt;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
+#[cfg(all(target_env = "sgx"))]
+use std::sync::{Arc, SgxCondvar as Condvar, SgxMutex as Mutex};
+#[cfg(not(target_env = "sgx"))]
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 
@@ -732,6 +735,11 @@ fn spawn_in_pool(shared_data: Arc<ThreadPoolSharedData>) {
     if let Some(ref name) = shared_data.name {
         builder = builder.name(name.clone());
     }
+    #[cfg(all(target_env = "sgx"))]
+    if let Some(ref stack_size) = shared_data.stack_size {
+        builder = builder;
+    }
+    #[cfg(not(target_env = "sgx"))]
     if let Some(ref stack_size) = shared_data.stack_size {
         builder = builder.stack_size(stack_size.to_owned());
     }
